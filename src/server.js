@@ -34,7 +34,7 @@ const template = (content, viewName= '') => `
   <title>Camera</title>
 </head>
 <body class="${viewName}">
-  <form action="/take" method="post">
+  <form action="/take" method="post" class="camera-button">
     <button type="submit" id="take-photo">Take photo</button>
   </form>
 ${content}
@@ -52,8 +52,13 @@ app.get('/photos', function (req, res) {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html');
   getFileListFrom(cameraPath, (files) => {
-    res.end(template(`<ul>${
-      files.map(file=>`<li><a href="/camera/${file}"/>${file}</a></li>`).join('\n')
+    res.end(template(`<ul class="photo-list">${
+      files.map(file=>`
+        <li>
+          <a href="/camera/${file}"/>
+            ${files.length < 20 ? `<img src="/camera/${file}" width="150px">` : ''}
+            ${file}
+          </a></li>`).join('\n')
     }</ul>`
       
     ));
