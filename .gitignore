@@ -105,3 +105,6 @@ dist
 
 # Saved pictures
 static/camera
+
+# nohup
+nohup.out
