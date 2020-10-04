@@ -18,6 +18,17 @@ const getFileListFrom = (path, callback) => {
   });
 }
 
+const getFilename  = () => {
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2, '0');
+  const mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+  const yyyy = today.getFullYear();
+  const hh = String(today.getHours()).padStart(2, '0');
+  const min = String(today.getMinutes()).padStart(2, '0');
+  const ms = String(today.getMilliseconds()).padStart(3, '0');
+
+  return `image_${yyyy}_${mm}_${dd}-${hh}:${min}:${ms}.jpg`;
+}
 
 const app = express()
 
@@ -76,8 +87,8 @@ app.get('/photos/:id', function (req, res) {
 
 
 app.post('/take', function (req, res) {
-  const filename = `${new Date().getTime()}.jpg`;
-  const filePath = path.join(cameraPath, `${new Date().getTime()}.jpg`);
+  const filename = getFilename();
+  const filePath = path.join(cameraPath, `${filename}`);
   const fullCommand = `${command} ${filePath}`
 
   exec(fullCommand, (error, stdout, stderr) => {
