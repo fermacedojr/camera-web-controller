@@ -3,10 +3,11 @@ const express = require('express')
 const path = require('path');
 const fs = require('fs');
 const { exec } = require("child_process");
+var raspividStream = require('raspivid-stream');
 
 // config
 const cameraPath = path.join(__dirname, '../static/camera');
-const command = 'raspistill -vf -hf --exposure verylong -awb auto -w 1640 -h 922 -o'
+const command = 'raspistill -ag 0 -co 30 -sa 15 -sh 20  -ifx denoise -rot 90 -awb auto -o'
 
 const getFileListFrom = (path, callback) => {
   fs.readdir(path, function (err, files) {
@@ -31,6 +32,7 @@ const getFilename  = () => {
 }
 
 const app = express()
+const expressWs = require('express-ws')(app);
 
 // Static files and photos
 app.use(express.static('static'))
@@ -85,6 +87,49 @@ app.get('/photos/:id', function (req, res) {
   })
 })
 
+
+app.ws('/video-stream', (ws, req) => {
+  console.log('Client connected');
+
+  ws.send(JSON.stringify({
+    action: 'init',
+    width: '960',
+    height: '540'
+  }));
+
+  var videoStream = raspividStream({ rotation: 90 });
+
+  videoStream.on('data', (data) => {
+      ws.send(data, { binary: true }, (error) => { if (error) console.error(error); });
+  });
+
+  ws.on('close', () => {
+      console.log('Client left');
+      videoStream.removeAllListeners('data');
+  });
+});
+
+app.get('/stream', function(req, res){
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/html');
+  res.end(`
+    <html>
+      <body>
+          <script type="text/javascript" src="https://rawgit.com/131/h264-live-player/master/vendor/dist/http-live-player.js"></script>
+          <script>
+              var canvas = document.createElement("canvas");
+              document.body.appendChild(canvas);
+
+              var wsavc = new WSAvcPlayer(canvas, "webgl");
+
+              var protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+              // wsavc.connect(protocol + '//' + window.location.host + '/video-stream');
+              wsavc.connect('ws://raspberrypi.local:3000/video-stream');
+          </script>
+      </body>
+    </html>
+  `);
+})
 
 app.post('/take', function (req, res) {
   const filename = getFilename();
